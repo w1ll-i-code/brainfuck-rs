@@ -1,4 +1,12 @@
+use crate::config::{Config, OptimisationLevel};
+use crate::llvm_generation::Generator;
+use crate::optimiser::transform;
+use inkwell::context::Context;
+
 mod ast;
+mod config;
+mod llvm_generation;
+mod optimiser;
 
 fn main() {
     let config: Config = match structopt::StructOpt::from_args_safe() {
@@ -11,8 +19,10 @@ fn main() {
 
     let a = ast::parse(&config).ok().unwrap();
 
-    let a = ast::parse(&file).ok().unwrap();
-    ast::parse(a.0).unwrap_err();
+    let a = match config.optimisation_level {
+        OptimisationLevel::Max => optimiser::run(&a),
+        _ => optimiser::transform(&a),
+    };
 
     println!("{:?}", a);
 }
