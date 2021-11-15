@@ -24,5 +24,11 @@ fn main() {
         _ => optimiser::transform(&a),
     };
 
+    let context = Context::create();
+    let generator = Generator::new(&context, &config);
+    generator.generate(&a);
+    generator.write_to_file(&config.output_file);
+
+    println!("{:#?}", config);
     println!("{:?}", a);
 }
