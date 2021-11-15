@@ -1,4 +1,3 @@
-use crate::ast::Command;
 use crate::optimiser::CommandFolded;
 use crate::Config;
 use inkwell::builder::Builder;
@@ -62,7 +61,7 @@ impl<'ctx> Generator<'ctx> {
         for command in program {
             match command {
                 Add(i) => self.build_add(*i, ptr),
-                Move(i) => self.build_add_ptr(*i as isize, ptr),
+                Move(i) => self.build_add_ptr(*i, ptr),
                 Loop(sub_program) => self.build_loop(ptr, sub_program),
                 MoveValue { pos_rel, mul } => self.build_move_value(ptr, *pos_rel, *mul),
                 SetZero => self.build_set_zero(ptr),
@@ -174,31 +173,38 @@ impl<'ctx> Generator<'ctx> {
         let i64_pos = i64_type.const_int(pos_rel as u64, false);
         let i64_mul = i64_type.const_int(mul as u64, false);
 
-        let ptr_load = self
+        let ptr_src = self
             .builder
             .build_load(*ptr, "load ptr")
             .into_pointer_value();
 
-        let ptr_val = self.builder.build_load(ptr_load, "load ptr value");
-        let ptr_val =
-            self.builder
-                .build_int_mul(ptr_val.into_int_value(), i64_mul, "add to data ptr");
-
         // unsafe because we are calling an unsafe function, since we could index out of bounds of the calloc
-        let ptr_load = unsafe {
+        let ptr_dest = unsafe {
             self.builder
-                .build_in_bounds_gep(ptr_load, &[i64_pos], "add to pointer")
+                .build_in_bounds_gep(ptr_src, &[i64_pos], "add to pointer")
         };
+
+        let ptr_val = self
+            .builder
+            .build_load(ptr_src, "load ptr value")
+            .into_int_value();
+
+        let ptr_val = self
+            .builder
+            .build_int_mul(ptr_val, i64_mul, "multiply to data ptr");
 
         let i64_stored = self
             .builder
-            .build_load(ptr_load, "load ptr value")
+            .build_load(ptr_dest, "load ptr value")
             .into_int_value();
+
         let result = self
             .builder
             .build_int_add(ptr_val, i64_stored, "add result to element");
 
-        self.builder.build_store(ptr_load, result);
+        self.builder.build_store(ptr_dest, result);
+        self.builder
+            .build_store(ptr_src, i64_type.const_int(0, false));
     }
 
     fn build_get(&self, ptr: &PointerValue) {

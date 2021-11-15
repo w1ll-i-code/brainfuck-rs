@@ -1,7 +1,7 @@
 PROG = test
 
 %: %.bf
-	target/debug/brainfuck_rs $^ -o $@.o
+	cargo run -- $^ -o $@.o -O Max
 	gcc $@.o -o $@
 	chmod 777 $@
 

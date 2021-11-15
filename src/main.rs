@@ -1,6 +1,5 @@
 use crate::config::{Config, OptimisationLevel};
 use crate::llvm_generation::Generator;
-use crate::optimiser::transform;
 use inkwell::context::Context;
 
 mod ast;
@@ -27,7 +26,7 @@ fn main() {
     let context = Context::create();
     let generator = Generator::new(&context, &config);
     generator.generate(&a);
-    generator.write_to_file(&config.output_file);
+    generator.write_to_file(&config.output_file).unwrap();
 
     println!("{:#?}", config);
     println!("{:?}", a);
