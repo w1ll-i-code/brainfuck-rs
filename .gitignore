@@ -1,2 +1,5 @@
 target/
 .idea/
+test
+*.o
+Cargo.lock
